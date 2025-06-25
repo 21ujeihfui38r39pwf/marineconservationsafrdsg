@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<title>SDGs 保育海洋小精靈問答遊戲</title>
+<style>
+  body {
+    background: linear-gradient(to bottom, #0077be, #004466);
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0; padding: 0;
+  }
+  h1 {
+    margin: 20px 0;
+  }
+  #instructions {
+    max-width: 600px;
+    margin: 30px auto;
+    background-color: rgba(0,0,0,0.4);
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 18px;
+    line-height: 1.6;
+  }
+  #start-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 18px;
+    background: #00cc66;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+  }
+  #game-area {
+    position: relative;
+    width: 600px;
+    height: 400px;
+    margin: 20px auto;
+    background-color: #005577;
+    border: 3px solid #00aaff;
+    overflow: hidden;
+    display: none;
+  }
+  .character, .trash {
+    position: absolute;
+    font-size: 40px;
+    user-select: none;
+  }
+  .character {
+    z-index: 10;
+  }
+  .trash {
+    font-size: 36px;
+  }
+  #question-container {
+    display: none;
+    background: #004466;
+    padding: 15px;
+    max-width: 600px;
+    margin: 15px auto;
+    border-radius: 10px;
+  }
+  #question {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+  .option {
+    display: block;
+    background: #0288d1;
+    border: none;
+    color: white;
+    padding: 10px;
+    margin: 5px auto;
+    width: 80%;
+    border-radius: 6px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  .option:hover {
+    background: #026ca0;
+  }
+  #message {
+    font-size: 22px;
+    margin-top: 15px;
+    font-weight: bold;
+    color: #00ff00;
+  }
+  #next-level-btn {
+    display: none;
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 18px;
+    border: none;
+    border-radius: 6px;
+    background: #00cc66;
+    color: white;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>SDGs 保育海洋小精靈問答遊戲</h1>
+
+<div id="instructions">
+  <p>🐠 你好！歡迎來到 <strong>保育海洋小精靈問答遊戲</strong>！</p>
+  <ul style="text-align:left; max-width: 500px; margin: auto;">
+    <li>🎮 使用鍵盤方向鍵移動海洋小精靈。</li>
+    <li>🗑️ 接觸垃圾圖示（如 🥤）會觸發問答。</li>
+    <li>❓ 回答正確才能清除垃圾，錯誤則保留。</li>
+    <li>🏆 清除所有垃圾即可過關！</li>
+  </ul>
+  <button id="start-btn">開始遊戲</button>
+</div>
+
+<div id="game-area">
+  <div id="player" class="character" style="left:0; top:0;">🐠</div>
+</div>
+
+<div id="question-container">
+  <div id="question"></div>
+  <div id="options"></div>
+</div>
+
+<div id="message"></div>
+<button id="next-level-btn">下一關</button>
+
+<script>
+  const gameArea = document.getElementById('game-area');
+  const player = document.getElementById('player');
+  const questionContainer = document.getElementById('question-container');
+  const questionEl = document.getElementById('question');
+  const optionsEl = document.getElementById('options');
+  const messageEl = document.getElementById('message');
+  const nextLevelBtn = document.getElementById('next-level-btn');
+  const startBtn = document.getElementById('start-btn');
+  const instructions = document.getElementById('instructions');
+
+  const gameWidth = 600;
+  const gameHeight = 400;
+  const step = 40;
+
+  let playerPos = { x: 0, y: 0 };
+  let trashItems = [];
+
+  const allQuestions = [
+    { question: "塑膠垃圾會對海洋生物造成什麼傷害？", options: ["窒息或誤食", "幫助生長", "沒有影響"], answer: "窒息或誤食" },
+    { question: "哪種行為有助於保護海洋？", options: ["減少使用塑膠", "隨意丟棄垃圾", "捕撈所有魚"], answer: "減少使用塑膠" },
+    { question: "珊瑚礁的作用是？", options: ["提供棲息地", "製造垃圾", "污染海水"], answer: "提供棲息地" },
+    { question: "海洋垃圾主要來源是？", options: ["陸地垃圾", "海洋動物", "太陽光"], answer: "陸地垃圾" },
+    { question: "塑膠袋在海洋中分解需要多久？", options: ["數十年", "幾天", "一週"], answer: "數十年" },
+    { question: "海洋酸化會影響？", options: ["珊瑚礁", "沙灘", "海浪"], answer: "珊瑚礁" },
+    { question: "我們可以怎麼減少海洋垃圾？", options: ["回收塑膠", "亂丟垃圾", "製造更多塑膠"], answer: "回收塑膠" }
+  ];
+
+  let questions = [...allQuestions];
+  let currentQuestion = null;
+  let currentTrash = null;
+
+  function spawnTrash(num) {
+    for (let i = 0; i < num; i++) {
+      const trash = document.createElement('div');
+      trash.className = 'trash';
+      trash.textContent = '🥤';
+      let x, y;
+      do {
+        x = Math.floor(Math.random() * (gameWidth / step)) * step;
+        y = Math.floor(Math.random() * (gameHeight / step)) * step;
+      } while ((x === playerPos.x && y === playerPos.y) || trashItems.some(t => t.x === x && t.y === y));
+      trash.style.left = x + 'px';
+      trash.style.top = y + 'px';
+      gameArea.appendChild(trash);
+      trashItems.push({ el: trash, x, y });
+    }
+  }
+
+  function movePlayer(dx, dy) {
+    const newX = playerPos.x + dx;
+    const newY = playerPos.y + dy;
+    if (newX < 0 || newX >= gameWidth || newY < 0 || newY >= gameHeight) return;
+    playerPos.x = newX;
+    playerPos.y = newY;
+    player.style.left = playerPos.x + 'px';
+    player.style.top = playerPos.y + 'px';
+    checkCollision();
+  }
+
+  function checkCollision() {
+    const collided = trashItems.find(t => t.x === playerPos.x && t.y === playerPos.y);
+    if (collided && !currentQuestion) {
+      currentTrash = collided;
+      askQuestion();
+    }
+  }
+
+  function askQuestion() {
+    if (questions.length === 0) return;
+    currentQuestion = questions.shift();
+    questionEl.textContent = currentQuestion.question;
+    optionsEl.innerHTML = '';
+    currentQuestion.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'option';
+      btn.textContent = opt;
+      btn.onclick = () => checkAnswer(opt);
+      optionsEl.appendChild(btn);
+    });
+    questionContainer.style.display = 'block';
+  }
+
+  function checkAnswer(selected) {
+    if (selected === currentQuestion.answer) {
+      messageEl.textContent = '答對了！垃圾消除一個！';
+      currentTrash.el.remove();
+      trashItems = trashItems.filter(t => t !== currentTrash);
+      questionContainer.style.display = 'none';
+      currentQuestion = null;
+      currentTrash = null;
+      if (trashItems.length === 0) {
+        messageEl.textContent = '🎉 恭喜過關！你成功保育海洋生態！';
+        nextLevelBtn.style.display = 'inline-block';
+        nextLevelBtn.onclick = () => { window.location.href = 'level2.html'; }; // Added redirect
+      }
+    } else {
+      messageEl.textContent = '答錯了，請再試一次！';
+    }
+  }
+
+  function startNextLevel() {
+    // This function is now only for replaying current level if needed, or if level2.html logic changes.
+    // For now, the next level button directly links to level2.html
+    messageEl.textContent = '';
+    nextLevelBtn.style.display = 'none';
+    questions = [...allQuestions];
+    trashItems.forEach(t => t.el.remove());
+    trashItems = [];
+    playerPos = { x: 0, y: 0 };
+    player.style.left = playerPos.x + 'px';
+    player.style.top = playerPos.y + 'px';
+    spawnTrash(7);
+  }
+
+  startBtn.addEventListener('click', () => {
+    instructions.style.display = 'none';
+    gameArea.style.display = 'block';
+    startNextLevel();
+  });
+
+  // nextLevelBtn.addEventListener('click', startNextLevel); // This is now handled by the inline onclick in checkAnswer
+
+  window.addEventListener('keydown', e => {
+    if (questionContainer.style.display === 'block') return;
+    switch (e.key) {
+      case 'ArrowUp': movePlayer(0, -step); break;
+      case 'ArrowDown': movePlayer(0, step); break;
+      case 'ArrowLeft': movePlayer(-step, 0); break;
+      case 'ArrowRight': movePlayer(step, 0); break;
+    }
+  });
+</script>
+
+</body>
+</html>
