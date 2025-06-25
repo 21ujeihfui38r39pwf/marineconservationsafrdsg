@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<title>SDGs 保育海洋生態射擊遊戲</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom, #006994, #004466);
+    color: white;
+    text-align: center;
+    overflow: hidden;
+  }
+  h1 {
+    margin: 20px 0;
+  }
+  #game-area {
+    position: relative;
+    width: 100vw;
+    height: 70vh;
+    margin: 0 auto;
+    background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1470&q=80');
+    background-size: cover;
+    background-position: center;
+    border: 3px solid #0ff;
+    overflow: hidden;
+    user-select: none;
+    display: none;
+  }
+  .target {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    font-size: 48px;
+    line-height: 70px;
+    cursor: crosshair;
+    user-select: none;
+    transition: transform 0.1s ease;
+    text-align: center;
+  }
+  .target:active {
+    transform: scale(0.8);
+  }
+  #score {
+    margin: 15px 0;
+    font-size: 22px;
+    font-weight: bold;
+    display: none;
+  }
+  #message {
+    font-size: 28px;
+    margin-top: 25px;
+    color: #0f0;
+    font-weight: bold;
+  }
+  #next-level-btn, #start-btn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background-color: #00cc66;
+    color: white;
+    cursor: pointer;
+  }
+  #next-level-btn { display: none; }
+  #instructions {
+    max-width: 600px;
+    margin: 40px auto;
+    background-color: rgba(0,0,0,0.4);
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 18px;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<h1>SDGs：保育海洋生態射擊遊戲</h1>
+
+<div id="instructions">
+  <p>👋 歡迎來到 <strong>保育海洋生態射擊遊戲</strong>！</p>
+  <ul style="text-align: left;">
+    <li>🔫 點擊畫面中出現的「<strong>垃圾</strong>」圖示來得分（如 🥤、🚬）。</li>
+    <li>🐟 小心別誤傷可愛的「<strong>海洋生物</strong>」喔（如 🐠、🐡），否則會扣分！</li>
+    <li>🏆 每一關需達指定分數才可過關，關卡越高越難！</li>
+  </ul>
+  <button id="start-btn">開始遊戲</button>
+</div>
+
+<div id="score">目前分數：0</div>
+<div id="game-area"></div>
+<div id="message"></div>
+<button id="next-level-btn">下一關</button>
+
+<script>
+  const gameArea = document.getElementById('game-area');
+  const scoreDisplay = document.getElementById('score');
+  const message = document.getElementById('message');
+  const nextLevelBtn = document.getElementById('next-level-btn');
+  const startBtn = document.getElementById('start-btn');
+  const instructions = document.getElementById('instructions');
+
+  let score = 0;
+  let level = 1;
+  let winScore = 1000;
+  let spawnInterval;
+
+  const trashEmojis = ['🥢', '🥡', '🥤', '🚬'];
+  const marineEmojis = ['🐟', '🐠', '🐡'];
+
+  function createTarget() {
+    const isTrash = Math.random() < 0.7;
+    const target = document.createElement('div');
+    target.className = 'target';
+    target.dataset.type = isTrash ? 'trash' : 'marine';
+    target.textContent = isTrash
+      ? trashEmojis[Math.floor(Math.random() * trashEmojis.length)]
+      : marineEmojis[Math.floor(Math.random() * marineEmojis.length)];
+
+    const maxX = gameArea.clientWidth - 70;
+    const maxY = gameArea.clientHeight - 70;
+    target.style.left = Math.random() * maxX + 'px';
+    target.style.top = Math.random() * maxY + 'px';
+
+    target.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (score >= winScore) return;
+
+      if (target.dataset.type === 'trash') {
+        score += Math.floor(Math.random() * 31) + 20;
+      } else {
+        score -= 50;
+        if (score < 0) score = 0;
+      }
+      scoreDisplay.textContent = `目前分數：${score}`;
+      target.remove();
+
+      if (score >= winScore) {
+        message.textContent = `🎉 第 ${level} 關過關！你成功保育海洋生態！`;
+        clearInterval(spawnInterval);
+        clearTargets();
+        nextLevelBtn.style.display = 'inline-block';
+      }
+    });
+
+    gameArea.appendChild(target);
+
+    setTimeout(() => {
+      if (gameArea.contains(target)) target.remove();
+    }, 3000);
+  }
+
+  function clearTargets() {
+    document.querySelectorAll('.target').forEach(t => t.remove());
+  }
+
+  function startGame() {
+    score = 0;
+    winScore = 1000 + (level - 1) * 300;
+    scoreDisplay.textContent = `目前分數：${score}`;
+    message.textContent = '';
+    nextLevelBtn.style.display = 'none';
+    scoreDisplay.style.display = 'block';
+    gameArea.style.display = 'block';
+    clearTargets();
+    spawnInterval = setInterval(createTarget, 700 - level * 50);
+  }
+
+  startBtn.addEventListener('click', () => {
+    instructions.style.display = 'none';
+    startGame();
+  });
+
+  // Modified next-level-btn to link to level3.html
+  nextLevelBtn.addEventListener('click', () => {
+    window.location.href = 'level3.html';
+  });
+</script>
+
+</body>
+</html>

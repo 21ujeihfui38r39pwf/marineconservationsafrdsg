@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌊 躲避垃圾保育海洋遊戲</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #e0f7fa;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    h1 {
+      margin-top: 20px;
+      color: #006064;
+    }
+    #instructions {
+      max-width: 400px;
+      margin: 10px auto 10px auto;
+      background: #b2dfdb;
+      padding: 15px;
+      border-radius: 10px;
+      color: #004d40;
+      font-size: 16px;
+    }
+    #game {
+      margin: 20px auto;
+      width: 400px;
+      height: 500px;
+      background: linear-gradient(to bottom, #4dd0e1, #006064);
+      border: 3px solid #004d40;
+      position: relative;
+      overflow: hidden;
+    }
+    #player {
+      width: 50px;
+      height: 50px;
+      font-size: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      bottom: 0;
+      left: 180px;
+    }
+    .trash {
+      width: 30px;
+      height: 30px;
+      position: absolute;
+      top: 0;
+      font-size: 24px;
+      text-align: center;
+    }
+    #message {
+      margin-top: 15px;
+      font-size: 20px;
+      color: green;
+    }
+    #retryBtn {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    #timer {
+      margin-top: 10px;
+      font-size: 18px;
+      color: #004d40;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌊 躲避垃圾遊戲</h1>
+
+  <!-- 遊戲說明 -->
+  <div id="instructions">
+    操控海洋生物🦈左右移動與跳躍，躲避掉落的垃圾，撐過30秒即為通關，保護海洋生態！
+  </div>
+
+  <div id="timer">剩餘時間：30 秒</div>
+  <div id="game">
+    <div id="player">🦈</div>
+  </div>
+  <div id="message"></div>
+  <button id="retryBtn" onclick="startGame()">重新挑戰</button>
+
+  <script>
+    const game = document.getElementById('game');
+    const player = document.getElementById('player');
+    const message = document.getElementById('message');
+    const retryBtn = document.getElementById('retryBtn');
+    const timerDisplay = document.getElementById('timer');
+
+    let playerX = 180;
+    let playerY = 0;
+    let jumping = false;
+    let gravity = 0;
+    let trashInterval;
+    let gameTimer;
+    let timeLeft = 30;
+    const speed = 5;
+
+    const trashImages = ['🥤','🥡','🥢','🚬'];
+
+    function startGame() {
+      message.textContent = '';
+      retryBtn.style.display = 'none';
+
+      playerX = 180;
+      playerY = 0;
+      gravity = 0;
+      timeLeft = 30;
+      timerDisplay.textContent = `剩餘時間：${timeLeft} 秒`;
+      player.style.left = playerX + 'px';
+      player.style.bottom = playerY + 'px';
+
+      document.querySelectorAll('.trash').forEach(t => t.remove());
+      clearInterval(trashInterval);
+      clearInterval(gameTimer);
+
+      trashInterval = setInterval(dropTrash, 700);
+      gameTimer = setInterval(updateTimer, 1000);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function updateTimer() {
+      timeLeft--;
+      timerDisplay.textContent = `剩餘時間：${timeLeft} 秒`;
+      if (timeLeft <= 0) {
+        endGame(true);
+      }
+    }
+
+    function dropTrash() {
+      const trash = document.createElement('div');
+      trash.classList.add('trash');
+      trash.textContent = trashImages[Math.floor(Math.random() * trashImages.length)];
+      trash.style.left = Math.random() * 370 + 'px';
+      game.appendChild(trash);
+
+      let y = 0;
+      const fall = setInterval(() => {
+        y += 4;
+        trash.style.top = y + 'px';
+
+        if (y > 480) {
+          clearInterval(fall);
+          trash.remove();
+        }
+
+        const trashRect = trash.getBoundingClientRect();
+        const playerRect = player.getBoundingClientRect();
+        if (
+          trashRect.left < playerRect.right &&
+          trashRect.right > playerRect.left &&
+          trashRect.bottom > playerRect.top &&
+          trashRect.top < playerRect.bottom
+        ) {
+          clearInterval(fall);
+          trash.remove();
+          endGame(false);
+        }
+      }, 30);
+    }
+
+    function endGame(success) {
+      clearInterval(trashInterval);
+      clearInterval(gameTimer);
+      if (success) {
+        message.textContent = '🎉 恭喜你完成所有的關卡，你成為海洋守護者！';
+      } else {
+        message.textContent = '💥 被垃圾打到了！請重新挑戰！';
+        retryBtn.style.display = 'inline-block';
+      }
+    }
+
+    function gameLoop() {
+      if (jumping) {
+        gravity -= 0.5;
+        playerY += gravity;
+        if (playerY <= 0) {
+          playerY = 0;
+          jumping = false;
+        }
+        player.style.bottom = playerY + 'px';
+      }
+      requestAnimationFrame(gameLoop);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        playerX = Math.max(0, playerX - speed);
+        player.style.left = playerX + 'px';
+      } else if (e.key === 'ArrowRight') {
+        playerX = Math.min(350, playerX + speed);
+        player.style.left = playerX + 'px';
+      } else if (e.key === ' ' || e.key === 'ArrowUp') {
+        if (!jumping) {
+          jumping = true;
+          gravity = 10;
+        }
+      }
+    });
+
+    startGame();
+  </script>
+</body>
+</html>

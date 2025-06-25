@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>SDGs 海洋垃圾分類遊戲</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: linear-gradient(to bottom, #a0e9f0, #0077be);
+      margin: 0;
+      padding: 0;
+      color: #003344;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #instructions {
+      background: #e0f7fa;
+      padding: 10px 20px;
+      margin: 10px auto;
+      max-width: 700px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    #game-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 20px auto;
+    }
+    #trash-items {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    .trash {
+      font-size: 50px;
+      cursor: grab;
+      margin: 10px;
+      display: inline-block;
+      text-align: center;
+    }
+    .trash .label {
+      font-size: 14px;
+      margin-top: 5px;
+      color: #004d40;
+    }
+    .bin {
+      width: 120px;
+      height: 120px;
+      margin: 10px;
+      padding: 10px;
+      border: 2px dashed #004d40;
+      border-radius: 10px;
+      display: inline-block;
+      vertical-align: top;
+      font-size: 16px;
+      background-color: #b2ebf2;
+    }
+    #bins {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    #message {
+      font-size: 20px;
+      color: green;
+      margin-top: 20px;
+    }
+    #next-level-btn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #0077be;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #next-level-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+<h1>SDGs 海洋垃圾分類遊戲</h1>
+<div id="instructions">
+  🌊 將下方的垃圾拖曳到正確的分類桶中。<br />
+  🧼 分類選項：塑膠類、金屬類、有機類、紙類、有害廢棄物。<br />
+  🎉 完成分類即可通過挑戰！
+</div>
+
+<div id="game-area">
+  <div id="trash-items">
+    <div class="trash" draggable="true" data-type="plastic">🥤<div class="label">飲料杯</div></div>
+    <div class="trash" draggable="true" data-type="plastic">🥡<div class="label">便當盒</div></div>
+    <div class="trash" draggable="true" data-type="hazard">🚬<div class="label">香菸</div></div>
+    <div class="trash" draggable="true" data-type="metal">🥫<div class="label">鋁罐</div></div>
+    <div class="trash" draggable="true" data-type="plastic">🧴<div class="label">塑膠瓶</div></div>
+    <div class="trash" draggable="true" data-type="bio">🍌<div class="label">香蕉皮</div></div>
+    <div class="trash" draggable="true" data-type="bio">🍎<div class="label">蘋果核</div></div>
+    <div class="trash" draggable="true" data-type="paper">📄<div class="label">廢紙</div></div>
+    <div class="trash" draggable="true" data-type="paper">📰<div class="label">報紙</div></div>
+    <div class="trash" draggable="true" data-type="hazard">🔋<div class="label">電池</div></div>
+  </div>
+
+  <div id="bins">
+    <div class="bin" data-type="plastic">塑膠類</div>
+    <div class="bin" data-type="metal">金屬類</div>
+    <div class="bin" data-type="bio">有機類</div>
+    <div class="bin" data-type="paper">紙類</div>
+    <div class="bin" data-type="hazard">有害廢棄物</div>
+  </div>
+</div>
+
+<div id="message"></div>
+<button id="next-level-btn" disabled>下一關</button>
+
+<script>
+  const trashItems = document.querySelectorAll('.trash');
+  const bins = document.querySelectorAll('.bin');
+  const message = document.getElementById('message');
+  const nextBtn = document.getElementById('next-level-btn');
+
+  let correctCount = 0;
+  const totalTrash = trashItems.length;
+
+  trashItems.forEach(trash => {
+    trash.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('type', trash.dataset.type);
+      trash.classList.add('dragging');
+    });
+
+    trash.addEventListener('dragend', () => {
+      trash.classList.remove('dragging');
+    });
+  });
+
+  bins.forEach(bin => {
+    bin.addEventListener('dragover', e => {
+      e.preventDefault();
+      bin.style.backgroundColor = '#80deea';
+    });
+
+    bin.addEventListener('dragleave', () => {
+      bin.style.backgroundColor = '#b2ebf2';
+    });
+
+    bin.addEventListener('drop', e => {
+      e.preventDefault();
+      const type = e.dataTransfer.getData('type');
+      const dragging = document.querySelector('.trash.dragging');
+      if (!dragging) return;
+
+      if (type === bin.dataset.type) {
+        dragging.remove();
+        correctCount++;
+        if (correctCount === totalTrash) {
+          message.textContent = '🎉 恭喜你完成分類！你是海洋保育小達人！';
+          nextBtn.disabled = false; // 啟用下一關按鈕
+        } else {
+          message.textContent = '✅ 分類正確！繼續努力～';
+        }
+      } else {
+        message.textContent = '❌ 分類錯誤，請再試一次！';
+      }
+      bin.style.backgroundColor = '#b2ebf2';
+    });
+  });
+
+  // Modified nextBtn to link to level4.html
+  nextBtn.addEventListener('click', () => {
+    window.location.href = 'level4.html';
+  });
+</script>
+
+</body>
+</html>
